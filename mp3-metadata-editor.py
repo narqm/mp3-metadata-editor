@@ -11,6 +11,7 @@ def main() -> None:
     parser.add_argument('file')
     parser.add_argument('-a', '--artist',
         action='store', required=False)
+    parser.add_argument('-i', '--image', required=False)
 
     args = parser.parse_args()
 
@@ -26,8 +27,8 @@ def main() -> None:
         em = ExtractMetadata(args.artist, file)
         em.find_number()
         title, ep_number = em.return_metadata()
-        mp3me = MP3MetadataEditor(mp3=file, title=title,
-            artist=args.artist, episode_num=ep_number)
+        mp3me = MP3MetadataEditor(mp3=file, title=title, artist=args.artist,
+                                  episode_num=ep_number, artwork=args.image)
         mp3me.add_metadata()
         mp3me.save()
 
@@ -57,13 +58,14 @@ class ExtractMetadata:
 
 class MP3MetadataEditor:
     '''Editor for mp3 file metadata'''
-    def __init__(self, mp3: Path, title: str, 
-                 artist: str, episode_num: str):
+    def __init__(self, mp3: Path, title: str, artist: str,
+                 episode_num: str, artwork: Path = None):
 
         self.audio_file = ed3.load(mp3)
         self.title = title
         self.artist = artist
         self.episode_num = episode_num
+        self.artwork = open(artwork, 'rb').read()
 
     def metadata(self) -> str:
         '''Return metadata if it exists'''
@@ -79,6 +81,8 @@ class MP3MetadataEditor:
         self.audio_file.tag.track_num = self.episode_num
         self.audio_file.tag.album = f'{self.artist} Podcast'
 
+        if self.artwork is not None:
+            self.audio_file.tag.images.set(3, self.artwork, 'image/jpg')
     def save(self) -> None:
         '''Save metadata back to original file'''
         self.audio_file.tag.save()
